@@ -1,0 +1,75 @@
+biospheric_mobility_stack/
+│
+├── 00_Master_Gateway/
+│   ├── index.html
+│   ├── executive_briefing.html
+│   ├── system_map.html
+│   └── risk_matrix.html
+│
+├── 01_Theoretical_Framework/
+│   ├── biospheric_cascade_primer.html
+│   ├── migration_system_dynamics.html
+│   ├── labor_ecology_feedback_loops.html
+│   └── historical_precedents.html
+│
+├── 02_Policy_Overhaul_Modules/
+│   ├── regenerative_visa_model.html
+│   ├── skills_to_soil_pipeline.html
+│   ├── rural_repopulation_accelerator.html
+│   ├── urban_food_integration_model.html
+│   └── temporary_restoration_permits.html
+│
+├── 03_Economic_Modeling/
+│   ├── cost_offset_calculator.html
+│   ├── healthcare_savings_projection.html
+│   ├── infrastructure_stress_model.html
+│   ├── tax_revenue_forecast.html
+│   └── food_price_stabilization_model.html
+│
+├── 04_Biospheric_Deployment_Layers/
+│   ├── edible_reforestation_grid.html
+│   ├── watershed_repair_program.html
+│   ├── soil_regeneration_network.html
+│   ├── pollinator_corridor_map.html
+│   └── wildfire_buffer_zones.html
+│
+├── 05_Governance_Architecture/
+│   ├── interministerial_coordination_stack.html
+│   ├── data_transparency_framework.html
+│   ├── local_authority_toolkit.html
+│   ├── compliance_and_safeguards.html
+│   └── anti-exploitation_protections.html
+│
+├── 06_Pilot_City_Deployments/
+│   ├── canada_case_study.html
+│   ├── eu_case_study.html
+│   ├── us_case_study.html
+│   ├── australia_case_study.html
+│   └── developing_nation_partnership_model.html
+│
+├── 07_Metrics_And_Dashboards/
+│   ├── planetary_stability_index.html
+│   ├── integration_success_metrics.html
+│   ├── biodiversity_gain_tracker.html
+│   ├── public_sentiment_model.html
+│   └── corruption_resilience_score.html
+│
+├── 08_Risk_Analysis/
+│   ├── labor_market_distortion_risks.html
+│   ├── social_cohesion_risks.html
+│   ├── ecological_miscalculation_risks.html
+│   ├── geopolitical_tradeoffs.html
+│   └── unintended_consequences.html
+│
+├── 09_Public_Communication_Layer/
+│   ├── narrative_reframing_toolkit.html
+│   ├── myth_vs_data_dashboard.html
+│   ├── youth_engagement_portal.html
+│   └── cross-party_briefing_pack.html
+│
+└── 10_Deployment_Playbooks/
+    ├── 12_month_implementation_plan.html
+    ├── legislative_drafting_templates.html
+    ├── funding_structures.html
+    ├── private_sector_alignment.html
+    └── global_scaling_strategy.html
