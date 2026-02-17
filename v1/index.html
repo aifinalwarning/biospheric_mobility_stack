@@ -1,0 +1,1944 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Biospheric Mobility Stack — Policy Dashboards for Immigration + Biospheric Cascades</title>
+  <meta name="description" content="Offline-capable, policy-grade dashboards: entwining biospheric cascades (food forests, soil, watersheds, wildfire buffers) with immigration easibility overhaul. Includes examples, metrics, risks, and Claude meta-prompts. Local-only storage via IndexedDB." />
+  <style>
+    /* =========================================================
+       BIOSPHERIC MOBILITY STACK — SINGLE-FILE DASHBOARD
+       Tooltip: This CSS section defines the core visual system (tokens, layout, print styles).
+       How to extend: Add new CSS variables under :root, new section styles under /* Sections *\/.
+       Expected outcome: Consistent UI across modules with accessible contrast and print readiness.
+    ========================================================= */
+
+    :root{
+      --bg0:#06070a;
+      --bg1:#0b0f16;
+      --card:#0f1724cc;
+      --card2:#0c1320cc;
+      --ink:#eaf2ff;
+      --muted:#a8b5cc;
+      --faint:#6f7c93;
+      --line:#243149;
+      --accent:#8cffc1;
+      --accent2:#89b7ff;
+      --warn:#ffd07a;
+      --risk:#ff7a93;
+      --ok:#7aff9e;
+      --shadow: 0 16px 40px rgba(0,0,0,.45);
+      --shadow2: 0 10px 24px rgba(0,0,0,.40);
+      --radius: 18px;
+      --radius2: 26px;
+      --pad: 16px;
+      --pad2: 22px;
+      --max: 1150px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--ink);
+      background:
+        radial-gradient(1200px 900px at 12% -10%, rgba(137,183,255,.18), transparent 55%),
+        radial-gradient(1100px 700px at 88% 5%, rgba(140,255,193,.14), transparent 55%),
+        radial-gradient(900px 900px at 50% 100%, rgba(255,208,122,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    a{color:var(--accent2); text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:var(--max); margin:0 auto; padding: 0 18px 70px}
+
+    /* Splash */
+    .splash{
+      position:fixed; inset:0; z-index:9999;
+      display:grid; place-items:center;
+      background:
+        radial-gradient(900px 600px at 50% 20%, rgba(137,183,255,.22), transparent 55%),
+        radial-gradient(900px 700px at 20% 80%, rgba(140,255,193,.18), transparent 58%),
+        linear-gradient(180deg, #05060a, #090d14);
+    }
+    .splashCard{
+      width:min(780px, 92vw);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius2);
+      background: rgba(13,18,28,.65);
+      box-shadow: var(--shadow);
+      padding: 22px;
+      position:relative;
+      overflow:hidden;
+    }
+    .splashGlow{
+      position:absolute; inset:-90px;
+      background: conic-gradient(from 180deg, rgba(140,255,193,.0), rgba(140,255,193,.18), rgba(137,183,255,.18), rgba(255,208,122,.14), rgba(140,255,193,.0));
+      filter: blur(22px);
+      animation: spin 6.5s linear infinite;
+      opacity:.9;
+      pointer-events:none;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg)} }
+    .splashInner{position:relative}
+    .splash h1{margin:0 0 8px; font-size: clamp(22px, 2.6vw, 34px); letter-spacing:.2px}
+    .splash p{margin:8px 0 0; color:var(--muted); line-height:1.5}
+    .bar{height:10px; border-radius:999px; background: rgba(255,255,255,.07); overflow:hidden; margin-top:16px}
+    .bar>i{display:block; height:100%; width:35%; border-radius:999px; background: linear-gradient(90deg, rgba(140,255,193,.9), rgba(137,183,255,.85)); animation: load 1.7s ease-in-out infinite}
+    @keyframes load{ 0%{transform:translateX(-120%)} 50%{transform:translateX(170%)} 100%{transform:translateX(170%)} }
+    .splashRow{display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; align-items:center}
+    .btn{
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.07);
+      color:var(--ink);
+      border-radius: 12px;
+      padding:10px 12px;
+      cursor:pointer;
+      box-shadow: var(--shadow2);
+    }
+    .btn:hover{background: rgba(255,255,255,.10)}
+    .btn.primary{
+      border-color: rgba(140,255,193,.35);
+      background: rgba(140,255,193,.10);
+    }
+    .btn.danger{
+      border-color: rgba(255,122,147,.35);
+      background: rgba(255,122,147,.10);
+    }
+    .mini{font-size:12px; color:var(--muted)}
+
+    /* Sticky header + nav */
+    header{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(180deg, rgba(6,7,10,.75), rgba(6,7,10,.35));
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .topbar{
+      max-width:var(--max); margin:0 auto;
+      padding: 12px 18px;
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+    }
+    .brand{display:flex; align-items:center; gap:10px}
+    .sig{
+      width:34px; height:34px; border-radius:12px;
+      background:
+        radial-gradient(12px 12px at 30% 30%, rgba(140,255,193,.95), transparent 60%),
+        radial-gradient(14px 14px at 70% 55%, rgba(137,183,255,.95), transparent 62%),
+        linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.14);
+      box-shadow: var(--shadow2);
+    }
+    .brandTitle{line-height:1.1}
+    .brandTitle b{display:block; font-size:14px; letter-spacing:.2px}
+    .brandTitle span{display:block; font-size:12px; color:var(--muted)}
+    .controls{display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end}
+    .search{
+      display:flex; align-items:center; gap:8px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      border-radius: 12px;
+      padding:8px 10px;
+      min-width: 260px;
+      max-width: 46vw;
+    }
+    .search input{
+      width:100%; border:0; outline:0; background:transparent; color:var(--ink);
+      font-size:14px;
+    }
+    .pill{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      border-radius:999px;
+      padding:6px 10px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .pill b{color:var(--ink)}
+    .kbd{font-family:var(--mono); font-size:11px; color:var(--muted); border:1px solid rgba(255,255,255,.14); padding:2px 6px; border-radius:8px; background: rgba(0,0,0,.25)}
+
+    /* Layout */
+    main{padding-top: 14px}
+    .grid{
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap: 16px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr}
+      .search{min-width: 180px}
+    }
+
+    /* Sidebar */
+    aside{
+      position: sticky;
+      top: 78px;
+      align-self:start;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(12,18,28,.62);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow2);
+      overflow:hidden;
+    }
+    .sideHead{
+      padding: 14px 14px 10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .sideHead b{display:block; font-size:13px}
+    .sideHead span{display:block; font-size:12px; color:var(--muted); margin-top:3px; line-height:1.4}
+    .toc{padding: 10px}
+    .toc a{
+      display:block;
+      padding: 8px 10px;
+      border-radius: 12px;
+      color: var(--ink);
+      border:1px solid transparent;
+    }
+    .toc a:hover{
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.10);
+      text-decoration:none;
+    }
+    .toc .sub{margin-left:10px; border-left:1px solid rgba(255,255,255,.10); padding-left:10px}
+    .toc .tag{font-size:11px; color:var(--muted); float:right}
+    .sideFoot{
+      padding: 12px 12px 14px;
+      border-top:1px solid rgba(255,255,255,.08);
+      display:flex; flex-wrap:wrap; gap:8px;
+    }
+
+    /* Cards + sections */
+    section{
+      position:relative;
+      margin: 0 0 16px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
+      background: rgba(13,18,28,.62);
+      box-shadow: var(--shadow2);
+      overflow:hidden;
+    }
+    .secPad{padding: 16px}
+    .secTitle{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      padding: 14px 16px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .secTitle h2{margin:0; font-size:16px}
+    .secTitle .meta{color:var(--muted); font-size:12px; line-height:1.35}
+    .badge{
+      font-size:11px;
+      padding: 5px 9px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color:var(--muted);
+      white-space:nowrap;
+      height: fit-content;
+    }
+    .badge.ok{border-color: rgba(122,255,158,.25); background: rgba(122,255,158,.08); color: #c8ffe0}
+    .badge.risk{border-color: rgba(255,122,147,.25); background: rgba(255,122,147,.08); color: #ffd2dc}
+    .badge.warn{border-color: rgba(255,208,122,.25); background: rgba(255,208,122,.08); color: #ffe8c7}
+    .cols{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 860px){ .cols{grid-template-columns: 1fr} }
+
+    .note{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.22);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .note b{display:block; margin-bottom:6px}
+    .note p{margin:0; color:var(--muted); line-height:1.55}
+    .kpi{
+      display:flex; gap:10px; flex-wrap:wrap; margin-top:10px
+    }
+    .kpi span{
+      font-size:12px; color:var(--muted);
+      border:1px dashed rgba(255,255,255,.14);
+      border-radius:999px;
+      padding: 6px 10px;
+      background: rgba(255,255,255,.04);
+    }
+    details{
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 14px;
+      background: rgba(255,255,255,.04);
+      padding: 10px 12px;
+      margin: 10px 0;
+    }
+    summary{cursor:pointer; color:var(--ink); font-weight:600}
+    details p, details li{color:var(--muted); line-height:1.55}
+    ul{margin: 8px 0 0 18px}
+    .small{font-size:12px; color:var(--muted)}
+    .mono{font-family:var(--mono)}
+    .hr{height:1px; background: rgba(255,255,255,.10); margin: 12px 0}
+
+    /* Parallax layers */
+    .sky{
+      position:absolute; inset:0; pointer-events:none; overflow:hidden;
+    }
+    .stars{position:absolute; inset:0; opacity:.35}
+    .nebula{position:absolute; inset:-40%; opacity:.16; filter: blur(0px); transform: translate3d(0,0,0)}
+    .nebula::before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(600px 420px at 30% 35%, rgba(137,183,255,.55), transparent 62%),
+        radial-gradient(650px 480px at 70% 55%, rgba(140,255,193,.45), transparent 62%),
+        radial-gradient(560px 420px at 50% 85%, rgba(255,208,122,.35), transparent 62%);
+    }
+
+    /* HUD */
+    .hud{
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      z-index: 60;
+      width: min(360px, calc(100vw - 28px));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      background: rgba(10,14,22,.72);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .hudHead{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding: 10px 12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .hudHead b{font-size:12px}
+    .hudHead .mini{font-size:11px}
+    .hudBody{padding: 10px 12px}
+    .row{display:flex; align-items:center; justify-content:space-between; gap:10px; margin: 6px 0}
+    .meter{
+      height:10px; border-radius:999px; background: rgba(255,255,255,.08);
+      overflow:hidden; flex:1;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .meter i{display:block; height:100%; width:45%; border-radius:999px; background: linear-gradient(90deg, rgba(140,255,193,.9), rgba(137,183,255,.85))}
+    .hudBtns{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    .hudBtns button{flex:1}
+
+    /* Constellation */
+    .constellWrap{
+      display:grid;
+      grid-template-columns: 160px 1fr;
+      gap:12px;
+      align-items:center;
+    }
+    @media (max-width: 520px){ .constellWrap{grid-template-columns:1fr} }
+    canvas{max-width:100%}
+    .chip{
+      font-size:11px;
+      color:var(--muted);
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      border-radius:999px;
+      padding: 6px 10px;
+      display:inline-flex; gap:8px; align-items:center;
+      margin: 4px 6px 0 0;
+    }
+    .chip i{width:8px; height:8px; border-radius:999px; display:inline-block; background: rgba(140,255,193,.9)}
+    .chip.r i{background: rgba(255,122,147,.9)}
+    .chip.w i{background: rgba(255,208,122,.9)}
+    .chip.b i{background: rgba(137,183,255,.9)}
+
+    /* Footer */
+    footer{
+      margin-top: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: var(--radius);
+      background: rgba(13,18,28,.62);
+      box-shadow: var(--shadow2);
+      padding: 14px 16px;
+      color:var(--muted);
+      line-height:1.55;
+    }
+
+    /* Search highlights */
+    mark{background: rgba(140,255,193,.18); color: var(--ink); border-radius: 6px; padding: 0 4px}
+    .hidden{display:none !important}
+
+    /* Print */
+    @media print{
+      header, aside, .hud, .splash{display:none !important}
+      body{background:#fff; color:#000}
+      section, footer{box-shadow:none; background:#fff; border:1px solid #ddd}
+      a{color:#000; text-decoration:underline}
+      .note{background:#fff}
+      details{break-inside:avoid}
+    }
+  </style>
+</head>
+
+<body>
+  <!--
+    Zero-Harm & Anti-Inversion Note:
+    This file is designed for peaceful, lawful policy learning and public-interest planning.
+    It stores everything locally (IndexedDB) and includes no hidden telemetry, no auto-send,
+    and no coercive or harm-enabling instructions. Use it to reduce suffering, not to escalate conflict.
+  -->
+
+  <!-- Splash Screen -->
+  <div class="splash" id="splash" aria-label="Loading screen">
+    <div class="splashCard">
+      <div class="splashGlow" aria-hidden="true"></div>
+      <div class="splashInner">
+        <h1>🌱🌍 Biospheric Mobility Stack</h1>
+        <p>
+          Policy-grade dashboards to entwine <b>biospheric cascades</b> (food forests, soil, watersheds, wildfire buffers)
+          with <b>immigration easibility</b> overhaul — without sacrificing safeguards, rights, or reality.
+        </p>
+        <div class="bar" aria-hidden="true"><i></i></div>
+        <div class="splashRow">
+          <button class="btn primary" id="enterBtn">Enter dashboard</button>
+          <button class="btn" id="loadStateBtn">Load local state</button>
+          <button class="btn danger" id="resetAllBtn">Reset local data</button>
+          <span class="mini">Local-only. No external dependencies. 🧠</span>
+        </div>
+        <p class="mini" style="margin-top:10px">
+          Tip: Use <span class="kbd">Ctrl</span>+<span class="kbd">K</span> to focus search. Use the HUD to track “Policy XP”.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <header>
+    <div class="topbar">
+      <div class="brand">
+        <div class="sig" aria-hidden="true"></div>
+        <div class="brandTitle">
+          <b>Biospheric Mobility Stack</b>
+          <span>Immigration easibility + biospheric cascades • offline-first state • policy examples</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="search" title="Tooltip: Search is client-side; it never leaves your device. Extend by adding sections with data-searchable='1'. Expected outcome: fast navigation for briefings.">
+          <span aria-hidden="true">🔎</span>
+          <input id="q" type="search" placeholder="Search (e.g., 'regenerative visa', 'wildfire buffer', 'OECD 2025')…" autocomplete="off" />
+          <span class="kbd" aria-hidden="true">Ctrl K</span>
+        </div>
+        <div class="pill" title="Tooltip: Local state status. Extend by adding more flags (e.g., 'pilot selected'). Expected outcome: instant confidence check.">
+          <span>State:</span> <b id="stateDot">●</b>
+          <span id="stateLabel">local</span>
+        </div>
+        <button class="btn" id="exportBtn" title="Export your local notes + XP as JSON.">Export</button>
+        <button class="btn" id="importBtn" title="Import JSON you exported earlier.">Import</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <aside aria-label="Table of contents">
+        <div class="sideHead">
+          <b>📌 Briefing TOC</b>
+          <span>Jump by module. Each section contains examples + a Claude prompt chain snippet.</span>
+        </div>
+
+        <nav class="toc" id="toc">
+          <a href="#why">Why braid migration + biosphere? <span class="tag">loop</span></a>
+          <div class="sub">
+            <a href="#loop">Feedback loop hypothesis <span class="tag">model</span></a>
+            <a href="#guardrails">Non-negotiable safeguards <span class="tag">ethics</span></a>
+          </div>
+
+          <a href="#dashboards">Platform collection map <span class="tag">suite</span></a>
+          <div class="sub">
+            <a href="#platformA">Regenerative Visa & Pathways <span class="tag">policy</span></a>
+            <a href="#platformB">Skills→Soil Pipeline <span class="tag">labor</span></a>
+            <a href="#platformC">Rural Repopulation Accelerator <span class="tag">housing</span></a>
+            <a href="#platformD">Edible Reforestation Grid <span class="tag">food</span></a>
+            <a href="#platformE">Wildfire Buffer Zones <span class="tag">risk</span></a>
+            <a href="#platformF">Metrics & Audits <span class="tag">kpi</span></a>
+          </div>
+
+          <a href="#examples">Examples library <span class="tag">templates</span></a>
+          <div class="sub">
+            <a href="#policyArchetypes">12 policy archetypes <span class="tag">menu</span></a>
+            <a href="#pilotPlaybook">6 pilot scenarios <span class="tag">pilot</span></a>
+            <a href="#kpis">20 KPI starters <span class="tag">measure</span></a>
+            <a href="#failure">Failure modes + fixes <span class="tag">stress</span></a>
+          </div>
+
+          <a href="#research">Latest research snapshot <span class="tag">2025</span></a>
+          <a href="#claude">Claude meta prompt chain <span class="tag">prompt</span></a>
+          <a href="#workspace">Local workspace (notes + scoring) <span class="tag">local</span></a>
+          <a href="#sources">Sources & reading list <span class="tag">links</span></a>
+        </nav>
+
+        <div class="sideFoot">
+          <button class="btn primary" id="gainXpBtn">+ Policy XP</button>
+          <button class="btn" id="collapseAllBtn">Collapse details</button>
+          <button class="btn" id="expandAllBtn">Expand details</button>
+        </div>
+      </aside>
+
+      <div>
+        <!-- WHY -->
+        <section id="why" data-searchable="1">
+          <div class="sky" aria-hidden="true">
+            <canvas class="stars" id="stars0"></canvas>
+            <div class="nebula" id="neb0"></div>
+          </div>
+
+          <div class="secTitle">
+            <div>
+              <h2>Why entwine biospheric cascades with immigration easibility? 🌱🧭</h2>
+              <div class="meta">
+                A sober systems view: migration is a capacity problem; ecology is a stability problem. If you link them
+                <em>with safeguards</em>, you can trade short-term friction for long-term resilience.
+              </div>
+            </div>
+            <span class="badge warn">systems framing</span>
+          </div>
+
+          <div class="secPad">
+            <div class="cols">
+              <div class="note">
+                <b>Policy intuition (without magic thinking)</b>
+                <p>
+                  Immigration systems are usually optimized for <span class="mono">throughput + compliance</span>.
+                  Biospheric programs are usually optimized for <span class="mono">projects + funding cycles</span>.
+                  When you fuse them, you can create a stable “work + place + purpose” pipeline — but only if you
+                  prevent exploitation and keep local consent central.
+                </p>
+                <div class="kpi">
+                  <span>Capacity planning</span><span>Labor matching</span><span>Local consent</span><span>Ecological audits</span>
+                </div>
+              </div>
+
+              <div class="note">
+                <b>Working theory to test (falsifiable)</b>
+                <p>
+                  <b>Hypothesis:</b> directing a portion of immigration pathways toward restoration-linked settlement
+                  (food forests, watershed repair, wildfire buffers) reduces medium-term public costs (health, disaster recovery)
+                  and increases social cohesion, which then increases sustainable migration capacity.
+                </p>
+                <div class="kpi">
+                  <span>Health cost delta</span><span>Fire suppression delta</span><span>Food price stability</span><span>Integration outcomes</span>
+                </div>
+              </div>
+            </div>
+
+            <details>
+              <summary>Claude expansion prompt (for this section)</summary>
+              <p class="mono">
+                Expand “Why entwine biospheric cascades + immigration easibility” into a 1-page executive brief:
+                include 3 counterarguments, 3 data-backed opportunity claims, 5 KPIs, and 2 historical analogues.
+                Keep tone neutral and implementation-focused. Include safeguards against exploitation.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- LOOP -->
+        <section id="loop" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Feedback loop hypothesis (model it, don’t worship it) 🔁</h2>
+              <div class="meta">This is the loop you’ll simulate, stress-test, and revise.</div>
+            </div>
+            <span class="badge ok">model-ready</span>
+          </div>
+          <div class="secPad">
+            <div class="note">
+              <b>Loop skeleton</b>
+              <p class="mono">
+                Easier, faster pathways (with safeguards) → directed settlement options → restoration work + training →
+                increased local food + buffers → lower disaster + health costs → fiscal stability → political stability →
+                improved sustainable migration capacity → repeat.
+              </p>
+            </div>
+
+            <details open>
+              <summary>Model ingredients (what you need to quantify)</summary>
+              <ul>
+                <li><b>Input:</b> inflow by visa type; skills distribution; settlement capacity; housing availability.</li>
+                <li><b>Ecology:</b> hectares restored; survival rates; watershed impacts; wildfire buffer effectiveness.</li>
+                <li><b>Economics:</b> wages; tax revenue; health outcomes; disaster recovery savings; food price variance.</li>
+                <li><b>Social:</b> integration outcomes; local consent; displacement risk; grievance indicators.</li>
+                <li><b>Governance:</b> audits completed; exploitation reports; enforcement response time; transparency scores.</li>
+              </ul>
+            </details>
+
+            <details>
+              <summary>Claude expansion prompt (simulation frame)</summary>
+              <p class="mono">
+                Build a system dynamics outline with stocks/flows for “Biospheric Mobility Stack”.
+                Provide variable definitions, example formulas, and sensitivity analysis plan.
+                Include best/worst-case bounds and a list of data sources to calibrate each parameter.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- GUARDRAILS -->
+        <section id="guardrails" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Non-negotiable safeguards 🛡️</h2>
+              <div class="meta">If these are absent, the system becomes a harm machine. We don’t build harm machines.</div>
+            </div>
+            <span class="badge risk">must-have</span>
+          </div>
+          <div class="secPad">
+            <div class="cols">
+              <div class="note">
+                <b>Anti-exploitation protections</b>
+                <p>
+                  Wage floors, portable benefits, independent ombuds, rapid investigation timelines,
+                  enforceable penalties, and “exit without jeopardy” pathways (workers can leave a bad placement
+                  without losing status).
+                </p>
+              </div>
+              <div class="note">
+                <b>Local consent + anti-displacement</b>
+                <p>
+                  Municipal opt-in, land use transparency, safeguards against speculation, and limits that prevent
+                  housing pressure spikes from being dumped onto locals.
+                </p>
+              </div>
+            </div>
+
+            <div class="cols" style="margin-top:12px">
+              <div class="note">
+                <b>Ecological realism</b>
+                <p>
+                  Restoration plans must be climate-appropriate, monitored, and adaptive. Survival rates, biodiversity,
+                  and water impacts must be audited — not assumed.
+                </p>
+              </div>
+              <div class="note">
+                <b>Sunset clauses + audits</b>
+                <p>
+                  Every new pathway ships with a sunset review date, and independent audits that can pause or
+                  revoke program components if harm indicators rise.
+                </p>
+              </div>
+            </div>
+
+            <details>
+              <summary>Claude prompt: draft safeguard clauses</summary>
+              <p class="mono">
+                Draft a safeguard framework for a restoration-linked immigration pathway:
+                include ombuds role, audit cadence, “exit without jeopardy” rules, transparency requirements,
+                and a sunset clause with explicit stop-conditions.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- DASHBOARDS MAP -->
+        <section id="dashboards" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Platform collection map 🧩</h2>
+              <div class="meta">A suite of dashboards for policymakers — each can be its own deployable index.html.</div>
+            </div>
+            <span class="badge warn">suite</span>
+          </div>
+          <div class="secPad">
+            <div class="note">
+              <b>How to use this page</b>
+              <p>
+                Treat each platform below as a “module blueprint.” Your workflow is:
+                pick a module → run the Claude prompt chain → generate its standalone dashboard → keep data local
+                → iterate using audits and pilot outcomes.
+              </p>
+            </div>
+
+            <details open>
+              <summary>Directory structure (copy/paste)</summary>
+              <pre class="mono" style="white-space:pre-wrap; margin:10px 0 0; color:var(--muted)">
+biospheric_mobility_stack/
+├── 00_Master_Gateway/
+├── 01_Theoretical_Framework/
+├── 02_Policy_Overhaul_Modules/
+├── 03_Economic_Modeling/
+├── 04_Biospheric_Deployment_Layers/
+├── 05_Governance_Architecture/
+├── 06_Pilot_City_Deployments/
+├── 07_Metrics_And_Dashboards/
+├── 08_Risk_Analysis/
+├── 09_Public_Communication_Layer/
+└── 10_Deployment_Playbooks/
+              </pre>
+            </details>
+          </div>
+        </section>
+
+        <!-- PLATFORM A -->
+        <section id="platformA" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Platform A: Regenerative Visa & Pathways 🛂🌿</h2>
+              <div class="meta">Example pathways that link residency to restoration outcomes — with rights-first design.</div>
+            </div>
+            <span class="badge ok">policy module</span>
+          </div>
+          <div class="secPad">
+            <div class="cols">
+              <div class="note">
+                <b>Pathway examples (choose one per pilot)</b>
+                <p>
+                  <b>1)</b> Restoration Skills Visa (trained trades + ecology modules) •
+                  <b>2)</b> Community Sponsor + Restoration Commitments •
+                  <b>3)</b> Seasonal Restoration Permit (strict protections) •
+                  <b>4)</b> Rural Settlement Fast-Track (opt-in municipalities) •
+                  <b>5)</b> Youth Climate Corps Pathway (education + service).
+                </p>
+              </div>
+              <div class="note">
+                <b>Eligibility examples</b>
+                <p>
+                  Skills matching (soil, forestry, water, construction) + language supports + verified housing plan +
+                  local sponsor confirmation + independent rights briefing + “exit without jeopardy” clause.
+                </p>
+              </div>
+            </div>
+
+            <details>
+              <summary>Claude prompt: generate this dashboard</summary>
+              <p class="mono">
+                Create a policy dashboard titled “Regenerative Visa & Pathways”.
+                Include: pathway menu, eligibility rules, rights protections, audit triggers, cost model, 3 pilot designs,
+                and a 12-month implementation plan. Provide counterarguments and mitigation strategies.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- PLATFORM B -->
+        <section id="platformB" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Platform B: Skills → Soil Pipeline (labor matching + training) 🧑‍🏭➡️🌱</h2>
+              <div class="meta">A practical bridge: labor market needs mapped into restoration programs with credential pathways.</div>
+            </div>
+            <span class="badge ok">labor module</span>
+          </div>
+          <div class="secPad">
+            <div class="cols">
+              <div class="note">
+                <b>Program components</b>
+                <p>
+                  Pre-arrival credential recognition, micro-cert training (safety, ecology basics), paid apprenticeships,
+                  matched placements (municipal projects + farms + watershed teams), and measured outcomes.
+                </p>
+              </div>
+              <div class="note">
+                <b>Example training tracks</b>
+                <p>
+                  Wildfire buffer crews • riparian restoration • urban food canopy • soil remediation • nursery operations •
+                  low-carbon construction for rural housing.
+                </p>
+              </div>
+            </div>
+
+            <details>
+              <summary>Claude prompt: build matching logic + anti-exploitation checks</summary>
+              <p class="mono">
+                Build a “Skills→Soil” pipeline dashboard:
+                include a matching algorithm explanation (inputs, constraints, fairness checks),
+                wage protections, portable status rules, and a grievance/ombuds workflow.
+                Add a metrics panel for completion rates, retention, and community satisfaction.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- PLATFORM C -->
+        <section id="platformC" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Platform C: Rural Repopulation Accelerator 🏘️🌾</h2>
+              <div class="meta">When cities are pressure cookers, rural capacity becomes a safety valve — if planned properly.</div>
+            </div>
+            <span class="badge warn">capacity</span>
+          </div>
+          <div class="secPad">
+            <div class="cols">
+              <div class="note">
+                <b>Settlement incentives (examples)</b>
+                <p>
+                  Housing vouchers tied to municipal opt-in • childcare & transport supports • fast-track local licensing •
+                  community sponsor networks • “build-to-live” programs (low-carbon homes with local labor).
+                </p>
+              </div>
+              <div class="note">
+                <b>Risk controls (examples)</b>
+                <p>
+                  Anti-speculation measures • rent stabilization triggers • phased intake caps •
+                  infrastructure readiness gating (water, schools, clinics).
+                </p>
+              </div>
+            </div>
+
+            <details>
+              <summary>Claude prompt: rural proofing + gating plan</summary>
+              <p class="mono">
+                Create a “Rural Repopulation Accelerator” dashboard:
+                include rural proofing checklist, infrastructure gating, housing protections,
+                and a phased intake model. Add a conflict-resolution plan and local consent process.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- PLATFORM D -->
+        <section id="platformD" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Platform D: Edible Reforestation Grid (food forests + corridors) 🍎🌳</h2>
+              <div class="meta">Biospheric cascades that also feed people: edible canopy, pollinators, and local resilience.</div>
+            </div>
+            <span class="badge ok">biosphere</span>
+          </div>
+          <div class="secPad">
+            <div class="cols">
+              <div class="note">
+                <b>Grid elements (examples)</b>
+                <p>
+                  Roadside edible corridors • school-to-home fruit routes • urban canopy food patches •
+                  riparian buffers • pollinator lanes • community orchards.
+                </p>
+              </div>
+              <div class="note">
+                <b>Operational realism</b>
+                <p>
+                  Nurseries, maintenance labor, climate-appropriate species, and multi-year survival auditing
+                  matter more than planting counts.
+                </p>
+              </div>
+            </div>
+
+            <details>
+              <summary>Claude prompt: measurable ecological outcomes</summary>
+              <p class="mono">
+                Build an “Edible Reforestation Grid” dashboard:
+                include species selection logic, climate suitability, survival auditing plan,
+                maintenance workflows, and community access rules. Provide 3 example corridor designs
+                and KPIs for biodiversity, food yield, and equity.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- PLATFORM E -->
+        <section id="platformE" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Platform E: Wildfire Buffer Zones (risk reduction) 🔥🧯</h2>
+              <div class="meta">Buffers are one of the most tangible fiscal arguments: fewer losses, lower suppression cost.</div>
+            </div>
+            <span class="badge risk">risk reduction</span>
+          </div>
+          <div class="secPad">
+            <div class="cols">
+              <div class="note">
+                <b>Buffer strategies (examples)</b>
+                <p>
+                  Fuel breaks + agroforestry • wetland restoration • riparian moisture corridors •
+                  shaded firebreaks using low-flammability species • defensible space programs.
+                </p>
+              </div>
+              <div class="note">
+                <b>Program link to mobility</b>
+                <p>
+                  Train and employ newcomers in restoration crews with strong protections and portable status;
+                  settle near buffer projects only where housing + services are ready.
+                </p>
+              </div>
+            </div>
+
+            <details>
+              <summary>Claude prompt: wildfire economics + governance</summary>
+              <p class="mono">
+                Create a “Wildfire Buffer Zones” dashboard:
+                include program governance, workforce pipeline, ecological design principles,
+                cost avoidance models, and a monitoring plan. Add a “stop-conditions” list if harm rises.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- PLATFORM F -->
+        <section id="platformF" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Platform F: Metrics, Audits & Public Legibility 📊🔎</h2>
+              <div class="meta">If you can’t measure it, you can’t govern it (and you can’t defend it politically).</div>
+            </div>
+            <span class="badge ok">KPI</span>
+          </div>
+          <div class="secPad">
+            <div class="cols">
+              <div class="note">
+                <b>Audit cadence (example)</b>
+                <p>
+                  Monthly operational metrics • quarterly social + labor audits • annual ecological assessments •
+                  independent review with published summaries (privacy-safe).
+                </p>
+              </div>
+              <div class="note">
+                <b>Legibility layer (example)</b>
+                <p>
+                  A public-facing summary that’s honest about tradeoffs: capacity, costs, harms prevented,
+                  and corrective actions taken.
+                </p>
+              </div>
+            </div>
+
+            <details>
+              <summary>Claude prompt: build the KPI dashboard</summary>
+              <p class="mono">
+                Build a “Metrics & Audits” dashboard with:
+                KPI definitions, data collection plan, privacy safeguards, grievance metrics,
+                ecological monitoring, and public reporting templates. Include a ‘red flag’ trigger table.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- EXAMPLES LIBRARY -->
+        <section id="examples" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Examples library (copy-paste building blocks) 🧰</h2>
+              <div class="meta">Concrete examples to reduce “blank page” failure in policy work.</div>
+            </div>
+            <span class="badge warn">templates</span>
+          </div>
+          <div class="secPad">
+            <div class="note">
+              <b>How this helps</b>
+              <p>
+                Policymakers often lose momentum because frameworks are abstract. The next sections offer:
+                policy archetypes, pilot scenarios, KPIs, and stress tests. Each includes a Claude prompt snippet.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 12 POLICY ARCHETYPES -->
+        <section id="policyArchetypes" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>12 policy archetypes (menu) 🗂️</h2>
+              <div class="meta">Pick 1–3 for a pilot. Do not ship all at once. Complexity is a predator.</div>
+            </div>
+            <span class="badge warn">menu</span>
+          </div>
+          <div class="secPad">
+            <details open>
+              <summary>Archetypes list</summary>
+              <ul>
+                <li><b>1) Regenerative Visa Track:</b> status pathway linked to audited restoration outcomes (rights-first).</li>
+                <li><b>2) Municipal Opt-In Quotas:</b> local governments request targeted inflows with readiness gating.</li>
+                <li><b>3) Sponsor + Stewardship Commitments:</b> community sponsors provide housing + integration supports.</li>
+                <li><b>4) Skills-to-Soil Apprenticeships:</b> paid training bridging labor shortages + ecological needs.</li>
+                <li><b>5) Seasonal Restoration Permits:</b> time-limited work with strict protections + portable status options.</li>
+                <li><b>6) Rural Proofing Legislation:</b> every change assessed for rural impacts (services, housing, transport).</li>
+                <li><b>7) Biodiversity Co-Benefit Funding:</b> align public funds to projects with measured biodiversity gains.</li>
+                <li><b>8) Food Corridor Statutes:</b> legal permissions for edible plantings along safe public routes.</li>
+                <li><b>9) Public Health Integration:</b> prescribe food forest access as a prevention lever; measure outcomes.</li>
+                <li><b>10) Disaster Risk Reduction Bonds:</b> finance nature-based buffers tied to verified risk reduction.</li>
+                <li><b>11) Open Audit Infrastructure:</b> publish program metrics with privacy-safe aggregation.</li>
+                <li><b>12) Sunset + Stop-Conditions:</b> laws include explicit triggers to pause if harms rise.</li>
+              </ul>
+            </details>
+
+            <details>
+              <summary>Claude prompt: choose archetypes + design a pilot</summary>
+              <p class="mono">
+                Select the best 3 archetypes for a first-year pilot in an OECD country.
+                Justify selection, list implementation steps, legal changes, costs, and safeguards.
+                Provide a “do not do” list and a stop-condition table.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- 6 PILOT SCENARIOS -->
+        <section id="pilotPlaybook" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>6 pilot scenarios (ready-made) 🚀</h2>
+              <div class="meta">Each scenario includes a core design, a risk, and a metric target.</div>
+            </div>
+            <span class="badge ok">pilot</span>
+          </div>
+          <div class="secPad">
+            <details open>
+              <summary>Pilot scenarios</summary>
+              <ul>
+                <li><b>1) Wildfire Belt Pilot:</b> settlement + buffer crews near high-risk zones (with housing gating). <span class="small">Target: measurable reduction in exposure risk + audited buffer completion.</span></li>
+                <li><b>2) Watershed Repair Pilot:</b> crews restore riparian zones; linked to flood mitigation planning. <span class="small">Target: improved water quality indicators + reduced flood damage cost.</span></li>
+                <li><b>3) Rural Clinic + Food Forest Pilot:</b> integrate public health prevention with local edible canopy. <span class="small">Target: diet-related risk markers improve + stable integration outcomes.</span></li>
+                <li><b>4) Urban Heat Island + Canopy Pilot:</b> newcomer workforce supports canopy expansion + green infrastructure. <span class="small">Target: heat exposure reduction + measured canopy gain.</span></li>
+                <li><b>5) Post-Disaster Rebuild + Restoration:</b> targeted pathways for rebuilding communities with nature-positive designs. <span class="small">Target: rebuild speed + reduced future risk.</span></li>
+                <li><b>6) “Corridor to School” Food Route:</b> edible corridor linking neighborhoods to schools with safety rules. <span class="small">Target: food access + community satisfaction.</span></li>
+              </ul>
+            </details>
+
+            <details>
+              <summary>Claude prompt: write the 12-month plan for one pilot</summary>
+              <p class="mono">
+                Choose one pilot scenario and produce a 12-month implementation plan:
+                governance, staffing, budget, legal changes, monitoring KPIs, and communications strategy.
+                Include risks, mitigations, and stop-conditions.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- 20 KPI STARTERS -->
+        <section id="kpis" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>20 KPI starters (measurement kit) 📏</h2>
+              <div class="meta">Use these as a baseline. Your pilot should publish a subset, not a novel.</div>
+            </div>
+            <span class="badge ok">measure</span>
+          </div>
+          <div class="secPad">
+            <details open>
+              <summary>KPI menu</summary>
+              <ul>
+                <li><b>Integration & rights:</b> retention rate; employment match quality; wage compliance; grievances resolved time; “exit without jeopardy” usage.</li>
+                <li><b>Housing & capacity:</b> rent delta vs baseline; vacancy rate; infrastructure readiness score; clinic/school load index.</li>
+                <li><b>Ecology:</b> hectares restored; survival rate at 6/12/24 months; biodiversity proxy index; riparian stability; soil organic matter trend.</li>
+                <li><b>Risk reduction:</b> wildfire exposure index; flood damage claims; heat-related ER visits trend (pilot area).</li>
+                <li><b>Economics:</b> tax revenue contribution; public cost delta; food price volatility index; program cost per outcome unit.</li>
+                <li><b>Trust & legitimacy:</b> community satisfaction; opt-in renewal rate; transparency compliance; audit pass rate.</li>
+              </ul>
+            </details>
+
+            <details>
+              <summary>Claude prompt: turn KPIs into a dashboard spec</summary>
+              <p class="mono">
+                Convert these KPIs into a dashboard specification:
+                define each KPI, data source type, collection frequency, and privacy considerations.
+                Add a red/amber/green threshold table and an audit plan.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- FAILURE MODES -->
+        <section id="failure" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Failure modes + fixes (stress test) 🧨🧯</h2>
+              <div class="meta">Assume the program fails — then design to survive that failure safely.</div>
+            </div>
+            <span class="badge risk">stress</span>
+          </div>
+          <div class="secPad">
+            <details open>
+              <summary>Common failure modes</summary>
+              <ul>
+                <li><b>Exploitation spike:</b> employers abuse tied-status workers → <b>Fix:</b> portable status + ombuds + penalties + rapid inspections.</li>
+                <li><b>Housing backlash:</b> intake exceeds local capacity → <b>Fix:</b> gating + caps + anti-speculation + phased rollout.</li>
+                <li><b>Ecological underperformance:</b> planting counts high, survival low → <b>Fix:</b> maintenance budgets + species suitability + survival auditing.</li>
+                <li><b>Political weaponization:</b> cherry-picked metrics used for propaganda → <b>Fix:</b> independent audits + transparent methodology.</li>
+                <li><b>Local resentment:</b> benefits perceived as unequal → <b>Fix:</b> co-benefit guarantees for locals + local jobs + shared food corridors.</li>
+                <li><b>Administrative overload:</b> processing slows → <b>Fix:</b> simplified pathways + digitized triage + clear eligibility.</li>
+              </ul>
+            </details>
+
+            <details>
+              <summary>Claude prompt: write the “failure-first” design memo</summary>
+              <p class="mono">
+                Write a “failure-first” design memo for this policy:
+                list top 10 failure modes, detection signals, and automatic responses.
+                Include a shutdown procedure that preserves rights and prevents harm.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- LATEST RESEARCH SNAPSHOT -->
+        <section id="research" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Latest research snapshot across domains 🧠📚</h2>
+              <div class="meta">A brief, evidence-tethered snapshot (late 2024 → 2026). Use sources as starting points.</div>
+            </div>
+            <span class="badge ok">fresh</span>
+          </div>
+          <div class="secPad">
+            <div class="note">
+              <b>What “latest” means here</b>
+              <p>
+                This section highlights a few recent, high-signal items from major institutions and peer-reviewed work:
+                migration flows and policy (OECD), nature-based solutions (World Bank + research), and biodiversity/transformative change (IPBES),
+                plus an example of government sustainable development reporting.
+              </p>
+            </div>
+
+            <details open>
+              <summary>High-signal items (with why they matter)</summary>
+              <ul>
+                <li>
+                  <b>OECD — International Migration Outlook 2025 (Nov 2025):</b>
+                  Tracks migration trends and labor market inclusion; reports temporary labor migration stabilizing at historically high levels in 2024,
+                  and provides updated policy trends that can inform “easibility overhaul” design.
+                </li>
+                <li>
+                  <b>World Bank — Nature-based solutions & climate resilience program work (2025):</b>
+                  Emphasizes scaling Nature-based Solutions (NbS) for climate resilience, including job creation and replicable models.
+                </li>
+                <li>
+                  <b>World Bank Open Knowledge — “NBS Invest” (Dec 2025):</b>
+                  Focuses on accelerating NbS integration and investment approaches, relevant to financing restoration-linked pilots.
+                </li>
+                <li>
+                  <b>IPBES — Transformative Change SPM (Apr 2025):</b>
+                  Science-policy framing for biodiversity and long-term human well-being; supports “systems, not silos” policy logic.
+                </li>
+                <li>
+                  <b>Peer-reviewed synthesis — NbS typologies & benefits (2025):</b>
+                  Summarizes mechanisms and multi-benefit pathways (biodiversity, adaptation, mitigation, health, jobs).
+                </li>
+                <li>
+                  <b>Government reporting example — Canada FSDS 2025 Progress Report (Feb 2026):</b>
+                  Demonstrates how governments track cross-domain sustainable development progress (useful template for dashboards).
+                </li>
+              </ul>
+            </details>
+
+            <details>
+              <summary>Claude prompt: fuse research into a policy narrative (without hype)</summary>
+              <p class="mono">
+                Using OECD Migration Outlook 2025, IPBES 2025 Transformative Change SPM, and World Bank NbS materials,
+                write a policy narrative that supports a restoration-linked immigration pilot. Include citations, limitations,
+                and a balanced “what we know / what we don’t” section.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- CLAUDE META PROMPT CHAIN -->
+        <section id="claude" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Claude meta prompt chain (copy/paste) 🧬🧾</h2>
+              <div class="meta">Prompts designed to generate standalone dashboards per module.</div>
+            </div>
+            <span class="badge warn">prompt</span>
+          </div>
+          <div class="secPad">
+            <details open>
+              <summary>MASTER PROMPT (for each dashboard file)</summary>
+              <pre class="mono" style="white-space:pre-wrap; color:var(--muted); margin:10px 0 0">
+You are generating a policy-grade HTML dashboard for national policymakers and civil servants.
+
+Goal: entwine biospheric cascades (food forests, soil, watersheds, wildfire buffers) with immigration easibility overhaul,
+while maintaining rights-first safeguards, local consent, and ecological realism.
+
+Requirements:
+- Neutral institutional tone (no ideology, no hype).
+- Include 3 counterarguments and mitigation strategies.
+- Provide measurable KPIs + data collection plan.
+- Include explicit governance safeguards: anti-exploitation, portability, audits, stop-conditions, sunset clause.
+- Include 12-month implementation plan + 3/5/10-year horizons.
+- Include financing options (public + private) and transparency plan.
+- Cite reputable sources (OECD, World Bank, IPBES, peer-reviewed research).
+
+Output structure:
+1) Executive Summary (≤500 words)
+2) System Map (text diagram)
+3) Policy Mechanisms (menu + how they work)
+4) Safeguards & Rights (non-negotiables)
+5) Economic Model (formulas + sensitivity analysis)
+6) Pilot Plan (who does what, when)
+7) Metrics Dashboard (KPIs + thresholds)
+8) Risks & Failure Modes (stress test)
+9) Appendices (templates, checklists, references)
+              </pre>
+            </details>
+
+            <details>
+              <summary>ECON MODEL PROMPT (formulas + sensitivity)</summary>
+              <pre class="mono" style="white-space:pre-wrap; color:var(--muted); margin:10px 0 0">
+Construct quantitative models for:
+- Disaster cost avoidance (wildfire/flood/heat)
+- Healthcare prevention savings (food access + canopy + air quality)
+- Rural capacity gains (housing + services)
+- Workforce productivity and tax revenue impacts
+
+Provide:
+- Variable definitions
+- Example formulas (symbolic if data absent)
+- Sensitivity analysis approach
+- Best-case / worst-case bounds
+- Data source list for calibration
+              </pre>
+            </details>
+
+            <details>
+              <summary>RISK & SAFETY PROMPT (stop-conditions)</summary>
+              <pre class="mono" style="white-space:pre-wrap; color:var(--muted); margin:10px 0 0">
+Assume the program fails. Identify:
+- Exploitation risk, displacement risk, ecological underperformance, political weaponization, admin overload.
+
+Design:
+- Hard safeguards + ombuds workflow
+- Audit cadence + independent oversight
+- Stop-condition table (red flags → automatic response)
+- Shutdown procedure that preserves rights and prevents harm
+              </pre>
+            </details>
+
+            <details>
+              <summary>PUBLIC LEGIBILITY PROMPT (trust layer)</summary>
+              <pre class="mono" style="white-space:pre-wrap; color:var(--muted); margin:10px 0 0">
+Create a public-facing summary:
+- Plain language explanation
+- What’s changing, why, and how rights are protected
+- What metrics will be published (privacy-safe)
+- How communities opt in/out
+- How grievances are handled
+- How the program can be paused or stopped
+              </pre>
+            </details>
+          </div>
+        </section>
+
+        <!-- WORKSPACE -->
+        <section id="workspace" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Local workspace: notes, scoring, and decisions 🧠🗃️</h2>
+              <div class="meta">Everything here saves locally (IndexedDB). No auto-send. No hidden analytics.</div>
+            </div>
+            <span class="badge ok">local</span>
+          </div>
+          <div class="secPad">
+            <div class="cols">
+              <div class="note">
+                <b>Policy notes</b>
+                <p class="small">Use this to draft a pilot concept. It auto-saves (rate-limited) to local storage.</p>
+                <textarea id="notes" rows="10" style="width:100%; border-radius:14px; border:1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.25); color: var(--ink); padding:10px; outline:none"></textarea>
+                <div class="small" id="saveStatus" style="margin-top:6px">Not saved yet.</div>
+              </div>
+
+              <div class="note">
+                <b>Pick your pilot focus</b>
+                <p class="small">Select 1–2. This updates your constellation + XP weighting.</p>
+                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:6px">
+                  <label class="chip"><input type="checkbox" class="focus" value="wildfire" /> 🔥 Wildfire buffers</label>
+                  <label class="chip"><input type="checkbox" class="focus" value="watershed" /> 💧 Watershed repair</label>
+                  <label class="chip"><input type="checkbox" class="focus" value="food" /> 🍎 Food corridors</label>
+                  <label class="chip"><input type="checkbox" class="focus" value="rural" /> 🏘️ Rural repopulation</label>
+                  <label class="chip"><input type="checkbox" class="focus" value="urban" /> 🌆 Urban canopy</label>
+                  <label class="chip"><input type="checkbox" class="focus" value="audit" /> 🔎 Audits & safeguards</label>
+                </div>
+
+                <div class="hr"></div>
+
+                <b>Quick scoring (local)</b>
+                <p class="small">Rate your current draft: <span class="mono">0–5</span>. The HUD uses this to compute “Policy Readiness”.</p>
+                <div style="display:grid; gap:8px">
+                  <label class="row"><span>Rights & portability</span><input class="score" type="range" min="0" max="5" step="1" value="2" data-key="rights" /></label>
+                  <label class="row"><span>Local consent</span><input class="score" type="range" min="0" max="5" step="1" value="2" data-key="consent" /></label>
+                  <label class="row"><span>Ecological realism</span><input class="score" type="range" min="0" max="5" step="1" value="2" data-key="ecology" /></label>
+                  <label class="row"><span>Admin simplicity</span><input class="score" type="range" min="0" max="5" step="1" value="2" data-key="simplicity" /></label>
+                  <label class="row"><span>Audit strength</span><input class="score" type="range" min="0" max="5" step="1" value="2" data-key="audit" /></label>
+                </div>
+                <div class="small" style="margin-top:8px">Tip: a pilot should score ≥4 on rights + audits before scaling.</div>
+              </div>
+            </div>
+
+            <details>
+              <summary>Claude prompt: turn my notes into a clean pilot brief</summary>
+              <p class="mono">
+                Convert the following notes into a 1-page pilot brief for policymakers:
+                include objective, scope, stakeholders, safeguards, KPIs, timeline, and risks.
+                Preserve neutral tone and include a stop-conditions table.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <!-- SOURCES -->
+        <section id="sources" data-searchable="1">
+          <div class="secTitle">
+            <div>
+              <h2>Sources & reading list (start here) 🔗</h2>
+              <div class="meta">A small but high-signal set. Keep your citations tight and reputable.</div>
+            </div>
+            <span class="badge warn">links</span>
+          </div>
+          <div class="secPad">
+            <details open>
+              <summary>Recent / institutional sources referenced in the snapshot</summary>
+              <ul>
+                <li>
+                  <b>OECD — International Migration Outlook 2025</b> (Nov 3, 2025).
+                  <a href="https://www.oecd.org/en/publications/2025/11/international-migration-outlook-2025_355ae9fd.html" target="_blank" rel="noopener">Open</a>
+                </li>
+                <li>
+                  <b>World Bank — Mobilizing Nature-Based Solutions for Disaster & Climate Resilience</b> (Jul 2025).
+                  <a href="https://projects.worldbank.org/en/results/2025/07/10/mobilizing-nature-based-solutions-nbs-for-disaster-and-climate-resilience" target="_blank" rel="noopener">Open</a>
+                </li>
+                <li>
+                  <b>World Bank Open Knowledge — “NBS Invest: Accelerating Investments in Nature-based Solutions”</b> (Dec 17, 2025).
+                  <a href="https://openknowledge.worldbank.org/entities/publication/0d37365d-c9d9-4097-9a1d-5c853a981a9b" target="_blank" rel="noopener">Open</a>
+                </li>
+                <li>
+                  <b>IPBES — Transformative Change SPM</b> (Apr 15, 2025, PDF).
+                  <a href="https://files.ipbes.net/ipbes-web-prod-public-files/2025-04/IPBES_Transformative_SPM_ILK_FinalForWeb.pdf" target="_blank" rel="noopener">Open</a>
+                </li>
+                <li>
+                  <b>Peer-reviewed: “Nature-based solutions: typologies, ecological processes…”</b> (2025).
+                  <a href="https://www.sciencedirect.com/science/article/pii/S2772411525000576" target="_blank" rel="noopener">Open</a>
+                </li>
+                <li>
+                  <b>Government example: Canada — 2025 Progress Report on the 2022–2026 Federal Sustainable Development Strategy</b> (Feb 5, 2026).
+                  <a href="https://www.canada.ca/en/environment-climate-change/services/climate-change/federal-sustainable-development-strategy/strategies-reports/2025-progress-report.html" target="_blank" rel="noopener">Open</a>
+                </li>
+              </ul>
+              <p class="small">
+                Note: external links open only when you’re online. The dashboard itself stays functional offline.
+              </p>
+            </details>
+
+            <details>
+              <summary>Attributions & licensing (human-readable)</summary>
+              <p class="small">
+                This single-file dashboard uses no third-party libraries. UI patterns are inspired by common open web
+                practices (sticky nav, collapsibles, local-first storage). Source links above belong to their respective owners.
+                When adapting patterns from open repositories, follow the repository license and attribute in your derived work.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        <footer>
+          <b>Zero-Harm & Anti-Inversion note</b><br />
+          This tool is built for peaceful, lawful policy work: reducing disaster risk, improving integration outcomes,
+          and increasing resilience through nature-positive programs. It stores everything locally (IndexedDB), has no hidden telemetry,
+          and includes export/reset controls. Do not use it to enable coercion, exploitation, or harm. 🌱🛡️
+        </footer>
+
+        <noscript>
+          <section style="margin-top:14px; padding:14px; border:1px solid #ddd; border-radius:12px; background:#fff; color:#000">
+            <b>Noscript fallback</b>
+            <p>
+              JavaScript is disabled, so local saving, search, HUD, and constellation visualization won’t run.
+              You can still read the content and copy the directory structure + prompt chain.
+            </p>
+          </section>
+        </noscript>
+      </div>
+    </div>
+  </main>
+
+  <!-- HUD -->
+  <div class="hud" id="hud" role="region" aria-label="Gamification HUD">
+    <div class="hudHead">
+      <div>
+        <b>🧭 Policy HUD</b>
+        <div class="mini">Local-only • XP + readiness • constellation state</div>
+      </div>
+      <button class="btn" id="hudToggle" style="padding:6px 10px">Hide</button>
+    </div>
+    <div class="hudBody" id="hudBody">
+      <div class="constellWrap">
+        <canvas id="constell" width="160" height="120" aria-label="Constellation state visualizer"></canvas>
+        <div>
+          <div class="row"><span class="mini">Policy XP</span><span class="mono" id="xp">0</span></div>
+          <div class="row">
+            <span class="mini">Readiness</span>
+            <div class="meter" aria-hidden="true"><i id="readyBar"></i></div>
+            <span class="mono" id="readyPct">0%</span>
+          </div>
+          <div class="mini" id="focusChips" style="margin-top:6px"></div>
+        </div>
+      </div>
+
+      <div class="hudBtns">
+        <button class="btn primary" id="xpSmall">+10 XP</button>
+        <button class="btn" id="xpBig">+50 XP</button>
+        <button class="btn danger" id="resetXp">Reset XP</button>
+      </div>
+    </div>
+  </div>
+
+  <input id="importFile" type="file" accept="application/json" class="hidden" />
+
+  <script>
+    /* =========================================================
+       CORE JS — SAFE LOCAL-FIRST
+       Tooltip: This script implements IndexedDB local persistence, search, HUD, constellation visualization,
+       rate-limited saves, and UX helpers. No external calls, no telemetry.
+       How to extend: Add new keys to STATE_DEFAULT, store additional objects in IndexedDB objectStore,
+       and add new sections with data-searchable="1" to be included in search.
+       Expected outcome: A dependable, offline-capable briefing tool for iterative policy drafting.
+    ========================================================= */
+
+    (function(){
+      "use strict";
+
+      // ---------- Safety: gentle rate limiting for user inputs ----------
+      const now = ()=> Date.now();
+      const clamp = (n,min,max)=> Math.max(min, Math.min(max, n));
+      const safeText = (s)=> (s||"").toString().replace(/[<>\u0000-\u001F]/g,""); // basic sanitization
+
+      // ---------- IndexedDB helpers ----------
+      const DB_NAME = "biospheric_mobility_stack_db";
+      const DB_VERSION = 1;
+      const STORE = "kv";
+
+      function openDB(){
+        return new Promise((resolve,reject)=>{
+          const req = indexedDB.open(DB_NAME, DB_VERSION);
+          req.onupgradeneeded = (e)=>{
+            const db = req.result;
+            if(!db.objectStoreNames.contains(STORE)){
+              db.createObjectStore(STORE, { keyPath:"k" });
+            }
+          };
+          req.onsuccess = ()=> resolve(req.result);
+          req.onerror = ()=> reject(req.error);
+        });
+      }
+      async function idbGet(k){
+        const db = await openDB();
+        return new Promise((resolve,reject)=>{
+          const tx = db.transaction(STORE, "readonly");
+          const os = tx.objectStore(STORE);
+          const req = os.get(k);
+          req.onsuccess = ()=> resolve(req.result ? req.result.v : null);
+          req.onerror = ()=> reject(req.error);
+        });
+      }
+      async function idbSet(k,v){
+        const db = await openDB();
+        return new Promise((resolve,reject)=>{
+          const tx = db.transaction(STORE, "readwrite");
+          tx.oncomplete = ()=> resolve(true);
+          tx.onerror = ()=> reject(tx.error);
+          tx.objectStore(STORE).put({k, v});
+        });
+      }
+      async function idbClear(){
+        const db = await openDB();
+        return new Promise((resolve,reject)=>{
+          const tx = db.transaction(STORE, "readwrite");
+          const req = tx.objectStore(STORE).clear();
+          req.onsuccess = ()=> resolve(true);
+          req.onerror = ()=> reject(req.error);
+        });
+      }
+
+      // ---------- State ----------
+      const STATE_DEFAULT = {
+        version: 1,
+        xp: 0,
+        notes: "",
+        focus: [],
+        scores: { rights:2, consent:2, ecology:2, simplicity:2, audit:2 },
+        lastSave: 0
+      };
+      let STATE = structuredClone(STATE_DEFAULT);
+
+      // ---------- DOM ----------
+      const $ = (sel, root=document)=> root.querySelector(sel);
+      const $$ = (sel, root=document)=> Array.from(root.querySelectorAll(sel));
+      const splash = $("#splash");
+      const enterBtn = $("#enterBtn");
+      const loadStateBtn = $("#loadStateBtn");
+      const resetAllBtn = $("#resetAllBtn");
+
+      const stateDot = $("#stateDot");
+      const stateLabel = $("#stateLabel");
+
+      const q = $("#q");
+      const notes = $("#notes");
+      const saveStatus = $("#saveStatus");
+
+      const xpEl = $("#xp");
+      const readyPct = $("#readyPct");
+      const readyBar = $("#readyBar");
+      const focusChips = $("#focusChips");
+
+      const gainXpBtn = $("#gainXpBtn");
+      const xpSmall = $("#xpSmall");
+      const xpBig = $("#xpBig");
+      const resetXp = $("#resetXp");
+
+      const exportBtn = $("#exportBtn");
+      const importBtn = $("#importBtn");
+      const importFile = $("#importFile");
+
+      const collapseAllBtn = $("#collapseAllBtn");
+      const expandAllBtn = $("#expandAllBtn");
+
+      const hudToggle = $("#hudToggle");
+      const hudBody = $("#hudBody");
+
+      // ---------- Search ----------
+      const searchableSections = $$("section[data-searchable='1']");
+      function clearMarks(el){
+        const marks = $$("mark", el);
+        for(const m of marks){
+          const t = document.createTextNode(m.textContent);
+          m.replaceWith(t);
+        }
+      }
+      function markMatches(el, term){
+        if(!term) return;
+        // Simple, safe highlighter: walk text nodes, replace matches
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+          acceptNode(node){
+            if(!node.nodeValue) return NodeFilter.FILTER_REJECT;
+            const p = node.parentElement;
+            if(!p) return NodeFilter.FILTER_REJECT;
+            if(["SCRIPT","STYLE","NOSCRIPT","TEXTAREA"].includes(p.tagName)) return NodeFilter.FILTER_REJECT;
+            if(p.closest("summary")) return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        });
+        const nodes = [];
+        while(walker.nextNode()) nodes.push(walker.currentNode);
+
+        const re = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"), "ig");
+        for(const node of nodes){
+          const txt = node.nodeValue;
+          if(!re.test(txt)) continue;
+          re.lastIndex = 0;
+          const frag = document.createDocumentFragment();
+          let last = 0;
+          let m;
+          while((m = re.exec(txt))){
+            const before = txt.slice(last, m.index);
+            if(before) frag.appendChild(document.createTextNode(before));
+            const mk = document.createElement("mark");
+            mk.textContent = txt.slice(m.index, m.index + m[0].length);
+            frag.appendChild(mk);
+            last = m.index + m[0].length;
+          }
+          const after = txt.slice(last);
+          if(after) frag.appendChild(document.createTextNode(after));
+          node.parentNode.replaceChild(frag, node);
+        }
+      }
+      function runSearch(termRaw){
+        const term = safeText(termRaw).trim();
+        for(const sec of searchableSections){
+          clearMarks(sec);
+          sec.classList.remove("hidden");
+        }
+        if(!term){
+          return;
+        }
+        const low = term.toLowerCase();
+        for(const sec of searchableSections){
+          const txt = (sec.innerText || "").toLowerCase();
+          const hit = txt.includes(low);
+          if(!hit){
+            sec.classList.add("hidden");
+          }else{
+            markMatches(sec, term);
+          }
+        }
+      }
+
+      // ---------- HUD readiness model ----------
+      function readiness(){
+        const s = STATE.scores;
+        // Weighted average: rights + audit heavier.
+        const w = { rights:1.4, audit:1.3, consent:1.1, ecology:1.1, simplicity:1.0 };
+        const sumW = Object.values(w).reduce((a,b)=>a+b,0);
+        const val = (s.rights*w.rights + s.audit*w.audit + s.consent*w.consent + s.ecology*w.ecology + s.simplicity*w.simplicity) / sumW;
+        // Optional boost for having at least 1 focus selected (signals specificity).
+        const boost = STATE.focus.length ? 0.35 : 0;
+        const pct = clamp(Math.round(((val+boost) / 5) * 100), 0, 100);
+        return pct;
+      }
+
+      // ---------- Constellation visualizer ----------
+      const c = $("#constell");
+      const cx = c.getContext("2d", { alpha:true });
+      function drawConstellation(){
+        const w = c.width, h = c.height;
+        cx.clearRect(0,0,w,h);
+
+        // Nodes represent scores + focus. Edges brighten with readiness.
+        const pct = readiness() / 100;
+
+        const nodes = [
+          {k:"rights", x:24, y:28, r:6},
+          {k:"audit", x:76, y:20, r:6},
+          {k:"consent", x:132, y:32, r:6},
+          {k:"ecology", x:112, y:82, r:6},
+          {k:"simplicity", x:48, y:92, r:6}
+        ];
+        const edges = [
+          ["rights","audit"],["audit","consent"],["consent","ecology"],["ecology","simplicity"],["simplicity","rights"],["audit","ecology"]
+        ];
+        const score = (k)=> (STATE.scores[k] || 0) / 5;
+
+        // Background faint stars
+        cx.globalAlpha = 0.25;
+        for(let i=0;i<26;i++){
+          const x = (Math.sin(i*17.3)*0.5+0.5)*w;
+          const y = (Math.cos(i*11.1)*0.5+0.5)*h;
+          cx.beginPath();
+          cx.arc(x,y, 0.9 + (i%3)*0.25, 0, Math.PI*2);
+          cx.fillStyle = "rgba(255,255,255,.55)";
+          cx.fill();
+        }
+        cx.globalAlpha = 1;
+
+        // Edges
+        cx.lineWidth = 1.3;
+        for(const [a,b] of edges){
+          const A = nodes.find(n=>n.k===a);
+          const B = nodes.find(n=>n.k===b);
+          const strength = (score(a)+score(b))*0.5;
+          const alpha = 0.12 + 0.55 * pct * strength;
+          cx.strokeStyle = `rgba(140,255,193,${alpha.toFixed(3)})`;
+          cx.beginPath();
+          cx.moveTo(A.x,A.y);
+          cx.lineTo(B.x,B.y);
+          cx.stroke();
+        }
+
+        // Nodes
+        for(const n of nodes){
+          const s = score(n.k);
+          const rr = n.r + s*3.5;
+          // Glow
+          cx.beginPath();
+          cx.arc(n.x,n.y, rr*2.3, 0, Math.PI*2);
+          cx.fillStyle = `rgba(137,183,255,${(0.05 + 0.10*s).toFixed(3)})`;
+          cx.fill();
+          // Core
+          cx.beginPath();
+          cx.arc(n.x,n.y, rr, 0, Math.PI*2);
+          cx.fillStyle = `rgba(255,255,255,${(0.45 + 0.35*s).toFixed(3)})`;
+          cx.fill();
+          cx.strokeStyle = "rgba(255,255,255,.25)";
+          cx.stroke();
+        }
+
+        // Focus markers
+        const focus = new Set(STATE.focus);
+        const dots = [
+          {id:"wildfire", x:18, y:108},
+          {id:"watershed", x:44, y:112},
+          {id:"food", x:74, y:114},
+          {id:"rural", x:104, y:112},
+          {id:"urban", x:132, y:108},
+          {id:"audit", x:148, y:92}
+        ];
+        for(const d of dots){
+          const on = focus.has(d.id);
+          cx.beginPath();
+          cx.arc(d.x,d.y, on ? 3.4 : 2.3, 0, Math.PI*2);
+          cx.fillStyle = on ? "rgba(255,208,122,.9)" : "rgba(255,255,255,.25)";
+          cx.fill();
+        }
+      }
+
+      // ---------- Stars canvas background (parallax) ----------
+      function initStars(canvas){
+        const ctx = canvas.getContext("2d", {alpha:true});
+        function resize(){
+          const parent = canvas.parentElement;
+          const rect = parent.getBoundingClientRect();
+          const dpr = Math.min(2, window.devicePixelRatio || 1);
+          canvas.width = Math.floor(rect.width * dpr);
+          canvas.height = Math.floor(rect.height * dpr);
+          canvas.style.width = rect.width + "px";
+          canvas.style.height = rect.height + "px";
+          ctx.setTransform(dpr,0,0,dpr,0,0);
+          draw();
+        }
+        const stars = Array.from({length:90}, (_,i)=>({
+          x: Math.random()*600,
+          y: Math.random()*420,
+          r: 0.5 + Math.random()*1.6,
+          a: 0.12 + Math.random()*0.55
+        }));
+        function draw(){
+          const w = canvas.clientWidth, h = canvas.clientHeight;
+          ctx.clearRect(0,0,w,h);
+          for(const s of stars){
+            const x = (s.x/600)*w;
+            const y = (s.y/420)*h;
+            ctx.beginPath();
+            ctx.arc(x,y,s.r,0,Math.PI*2);
+            ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+            ctx.fill();
+          }
+        }
+        resize();
+        window.addEventListener("resize", resize, {passive:true});
+        return { draw, resize };
+      }
+      const stars0 = initStars($("#stars0"));
+
+      // Parallax nebula
+      const neb0 = $("#neb0");
+      function onScroll(){
+        const y = window.scrollY || 0;
+        neb0.style.transform = `translate3d(0, ${Math.min(40, y*0.03)}px, 0)`;
+      }
+      window.addEventListener("scroll", onScroll, {passive:true});
+
+      // ---------- Persistence ----------
+      async function loadState(){
+        try{
+          const saved = await idbGet("state");
+          if(saved && typeof saved === "object"){
+            STATE = { ...structuredClone(STATE_DEFAULT), ...saved };
+          }
+          applyStateToUI();
+          setStateIndicator(true);
+          return true;
+        }catch(e){
+          setStateIndicator(false);
+          return false;
+        }
+      }
+      async function saveState(){
+        try{
+          STATE.lastSave = now();
+          await idbSet("state", STATE);
+          setStateIndicator(true);
+          saveStatus.textContent = "Saved locally.";
+        }catch(e){
+          setStateIndicator(false);
+          saveStatus.textContent = "Could not save (storage blocked?).";
+        }
+      }
+      function setStateIndicator(ok){
+        stateDot.style.color = ok ? "var(--ok)" : "var(--risk)";
+        stateLabel.textContent = ok ? "local" : "blocked";
+      }
+      function applyStateToUI(){
+        xpEl.textContent = String(STATE.xp || 0);
+        notes.value = STATE.notes || "";
+        // Focus checks
+        const set = new Set(STATE.focus || []);
+        $$(".focus").forEach(cb=> cb.checked = set.has(cb.value));
+        // Scores
+        $$(".score").forEach(r=>{
+          const k = r.dataset.key;
+          r.value = String(clamp(STATE.scores?.[k] ?? 2, 0, 5));
+        });
+        updateHUD();
+      }
+
+      // ---------- HUD updates ----------
+      function updateHUD(){
+        xpEl.textContent = String(STATE.xp || 0);
+        const pct = readiness();
+        readyPct.textContent = pct + "%";
+        readyBar.style.width = pct + "%";
+        // Chips
+        const f = STATE.focus || [];
+        if(!f.length){
+          focusChips.innerHTML = '<span class="chip b"><i style="background:rgba(137,183,255,.9)"></i> No focus selected</span>';
+        }else{
+          const labels = {
+            wildfire:"🔥 Wildfire",
+            watershed:"💧 Watershed",
+            food:"🍎 Food",
+            rural:"🏘️ Rural",
+            urban:"🌆 Urban",
+            audit:"🔎 Audits"
+          };
+          focusChips.innerHTML = f.map(x=> `<span class="chip"><i></i>${labels[x]||x}</span>`).join("");
+        }
+        drawConstellation();
+      }
+
+      // ---------- Input handlers (rate limited) ----------
+      let noteTimer = null;
+      notes.addEventListener("input", ()=>{
+        const t = safeText(notes.value);
+        STATE.notes = t;
+        saveStatus.textContent = "Typing…";
+        // gentle rate limit: save after 550ms pause
+        if(noteTimer) clearTimeout(noteTimer);
+        noteTimer = setTimeout(()=> saveState(), 550);
+      }, {passive:true});
+
+      $$(".focus").forEach(cb=>{
+        cb.addEventListener("change", ()=>{
+          const picked = $$(".focus").filter(x=>x.checked).map(x=>x.value);
+          STATE.focus = picked.slice(0, 3); // limit: keep pilots focused, reduce complexity
+          // Enforce limit in UI
+          $$(".focus").forEach(x=>{
+            if(!STATE.focus.includes(x.value) && STATE.focus.length >= 3){
+              x.disabled = true;
+              x.parentElement.style.opacity = .55;
+            }else{
+              x.disabled = false;
+              x.parentElement.style.opacity = 1;
+            }
+          });
+          updateHUD();
+          saveState();
+        });
+      });
+
+      $$(".score").forEach(r=>{
+        r.addEventListener("input", ()=>{
+          const k = r.dataset.key;
+          STATE.scores[k] = parseInt(r.value, 10);
+          updateHUD();
+          // save lightly (no spam)
+          if(noteTimer) clearTimeout(noteTimer);
+          noteTimer = setTimeout(()=> saveState(), 450);
+        }, {passive:true});
+      });
+
+      // ---------- XP actions ----------
+      function addXP(n){
+        STATE.xp = clamp((STATE.xp||0) + n, 0, 999999);
+        updateHUD();
+        saveState();
+      }
+      xpSmall.addEventListener("click", ()=> addXP(10));
+      xpBig.addEventListener("click", ()=> addXP(50));
+      gainXpBtn.addEventListener("click", ()=> addXP(25));
+      resetXp.addEventListener("click", ()=>{
+        STATE.xp = 0;
+        updateHUD();
+        saveState();
+      });
+
+      // ---------- Expand/collapse details ----------
+      collapseAllBtn.addEventListener("click", ()=>{
+        $$("details").forEach(d=> d.open = false);
+      });
+      expandAllBtn.addEventListener("click", ()=>{
+        $$("details").forEach(d=> d.open = true);
+      });
+
+      // ---------- Search shortcuts ----------
+      document.addEventListener("keydown", (e)=>{
+        const isK = (e.key||"").toLowerCase() === "k";
+        if((e.ctrlKey || e.metaKey) && isK){
+          e.preventDefault();
+          q.focus();
+        }
+      });
+      q.addEventListener("input", ()=> runSearch(q.value), {passive:true});
+
+      // ---------- Export/import ----------
+      exportBtn.addEventListener("click", ()=>{
+        const payload = JSON.stringify({ exportedAt: new Date().toISOString(), state: STATE }, null, 2);
+        const blob = new Blob([payload], {type:"application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "biospheric_mobility_stack_state.json";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(()=> URL.revokeObjectURL(url), 500);
+      });
+
+      importBtn.addEventListener("click", ()=> importFile.click());
+      importFile.addEventListener("change", async ()=>{
+        const file = importFile.files && importFile.files[0];
+        if(!file) return;
+        try{
+          const text = await file.text();
+          const obj = JSON.parse(text);
+          const st = obj && obj.state ? obj.state : obj;
+          if(!st || typeof st !== "object") throw new Error("Invalid JSON structure.");
+          STATE = { ...structuredClone(STATE_DEFAULT), ...st };
+          applyStateToUI();
+          await saveState();
+          alert("Imported successfully (local-only).");
+        }catch(err){
+          alert("Import failed: " + (err && err.message ? err.message : "unknown error"));
+        }finally{
+          importFile.value = "";
+        }
+      });
+
+      // ---------- HUD toggle ----------
+      let hudHidden = false;
+      hudToggle.addEventListener("click", ()=>{
+        hudHidden = !hudHidden;
+        hudBody.style.display = hudHidden ? "none" : "block";
+        hudToggle.textContent = hudHidden ? "Show" : "Hide";
+      });
+
+      // ---------- Splash interactions ----------
+      async function closeSplash(){
+        splash.style.opacity = "0";
+        splash.style.pointerEvents = "none";
+        setTimeout(()=> splash.remove(), 350);
+      }
+      enterBtn.addEventListener("click", closeSplash);
+
+      loadStateBtn.addEventListener("click", async ()=>{
+        const ok = await loadState();
+        alert(ok ? "Loaded local state." : "Could not load state (storage blocked?).");
+      });
+
+      resetAllBtn.addEventListener("click", async ()=>{
+        const yes = confirm("Reset ALL local data for this dashboard? This cannot be undone.");
+        if(!yes) return;
+        await idbClear();
+        STATE = structuredClone(STATE_DEFAULT);
+        applyStateToUI();
+        setStateIndicator(true);
+        alert("Local data reset.");
+      });
+
+      // ---------- Initial load ----------
+      (async function init(){
+        await loadState(); // best effort
+        applyStateToUI();
+        // Unlock focus disabling logic
+        const picked = new Set(STATE.focus || []);
+        $$(".focus").forEach(x=>{
+          x.checked = picked.has(x.value);
+        });
+        // enforce focus cap
+        const current = $$(".focus").filter(x=>x.checked).map(x=>x.value);
+        STATE.focus = current.slice(0,3);
+        $$(".focus").forEach(x=>{
+          if(!STATE.focus.includes(x.value) && STATE.focus.length >= 3){
+            x.disabled = true;
+            x.parentElement.style.opacity = .55;
+          }else{
+            x.disabled = false;
+            x.parentElement.style.opacity = 1;
+          }
+        });
+        updateHUD();
+      })();
+
+    })();
+  </script>
+</body>
+</html>
